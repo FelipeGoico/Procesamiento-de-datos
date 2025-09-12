@@ -1,1 +1,27 @@
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Archivos de Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Archivos de logs y entornos
+*.log
+.env
+.venv/
+venv/
+ENV/
+
+# Archivos de Streamlit
+.streamlit/
+
+# Archivos de datos (ajusta según lo que quieras trackear)
+*.csv
+*.tsv
+*.parquet
+*.db
+
+# Mantén solo el CSV específico que sí quieres ignorar
 data_processed.csv

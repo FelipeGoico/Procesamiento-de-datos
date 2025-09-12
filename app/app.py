@@ -18,27 +18,52 @@ IMG_DIR = BASE_DIR / "img"
 IMAGE_PATH_02 = IMG_DIR / "fvets-12-1630083-g002.jpg"
 IMAGE_PATH_03 = IMG_DIR / "fvets-12-1630083-g003.jpg"
 IMAGE_PATH_04 = IMG_DIR / "fvets-12-1630083-g004.jpg"
+IMAGE_PATH_05 = IMG_DIR / "fvets-12-1630083-g005.jpg"
+
+import streamlit as st
+from pathlib import Path
+import base64
 
 # ===========================
-# Título principal
+# Rutas de imágenes
 # ===========================
-st.markdown("""
+BASE_DIR = Path(__file__).resolve().parent.parent
+IMG_DIR = BASE_DIR / "img"
+IMAGE_PATH_05 = IMG_DIR / "fvets-12-1630083-g005.jpg"
+
+# ===========================
+# Convertir imagen a base64
+# ===========================
+def img_to_base64(img_path):
+    with open(str(img_path), "rb") as f:  # <-- Convertimos Path a string
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+img_base64 = img_to_base64(IMAGE_PATH_05)
+
+# ===========================
+# Banner con imagen de fondo
+# ===========================
+st.markdown(f"""
 <div style="
-    background-color:#4CAF50; 
-    padding: 20px; 
+    background-image: url('data:image/jpg;base64,{img_base64}');
+    background-size: cover;
+    background-position: center;
+    padding: 40px 20px; 
     border-radius: 10px; 
-    text-align:center;
-    color:white;
-    font-size:32px;
-    font-weight:bold;
-    box-shadow: 3px 3px 10px #888888;
+    text-align: center;
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.5);  /* mejora la legibilidad */
+    box-shadow: 3px 3px 15px #888888;
+    width: 100%;
 ">
-🌾🐄 EXAMEN PROCESAMIENTO DE DATOS - MAGISTER DATA SCIENCE 🐄🌾
-</div>
-
-<p style="text-align:center; font-size:16px; margin-top:10px;">
+ EXAMEN PROCESAMIENTO DE DATOS - MAGISTER DATA SCIENCE 
+<p style="font-size:18px; font-weight:normal; margin-top:10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5);">
 A dataset for detecting walking, grazing, and resting behaviors in free-grazing cattle using IoT collar IMU signals
 </p>
+</div>
 """, unsafe_allow_html=True)
 
 # ===========================
