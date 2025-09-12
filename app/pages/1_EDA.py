@@ -1,4 +1,4 @@
-from app import st, df
+import streamlit as st
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -8,6 +8,8 @@ import networkx as nx
 import plotly.graph_objects as go
 import plotly.express as px
 
+
+df = st.session_state.df
 
 
 # ===========================
@@ -42,12 +44,10 @@ tr:nth-child(even) td {
 """, unsafe_allow_html=True)
 
 
-
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent  # sube desde pages -> app -> Procesamiento-de-datos
+# sube desde pages -> app -> Procesamiento-de-datos
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 IMG_DIR = BASE_DIR / "img"
 IMAGE_PATH_00 = IMG_DIR / "fvets-12-1630083-g000.jpg"
-
 
 
 # ===========================
@@ -160,7 +160,8 @@ df['actividad_extrema'] = (
     """, language="python")
 
 
-st.image(str(IMAGE_PATH_00), caption="Estructura de carpetas y archivos del dataset original", use_container_width=True)
+st.image(str(IMAGE_PATH_00),
+         caption="Estructura de carpetas y archivos del dataset original", use_container_width=True)
 
 # ===========================
 # Dataset y variables
@@ -264,49 +265,52 @@ with st.expander("🏷️ Variables de Etiqueta"):
 """)
 
 
-
 # ===========================
 # Estadísticas y collage de histogramas
 # ===========================
-col_numericas = df.select_dtypes(include=[np.number]).columns.drop('label', errors='ignore')
+# col_numericas = df.select_dtypes(
+#     include=[np.number]).columns.drop('label', errors='ignore')
 
-st.markdown("### 📈 Estadísticas Descriptivas de Variables Numéricas")
+# st.markdown("### 📈 Estadísticas Descriptivas de Variables Numéricas")
 
-# Tabla transpuesta limpia
-desc_df = df[col_numericas].describe().T
-desc_df = desc_df[['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']]
-desc_df = desc_df.round(2)
-st.dataframe(desc_df, use_container_width=True)
+# # Tabla transpuesta limpia
+# desc_df = df[col_numericas].describe().T
+# desc_df = desc_df[['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']]
+# desc_df = desc_df.round(2)
+# st.dataframe(desc_df, use_container_width=True)
 
-
+fig, col_numericas = st.session_state.graphs
+st.pyplot(fig)
 # ===========================
 # Collage de histogramas
 # ===========================
-st.markdown("### 📊 Distribución de Variables Numéricas por columna")
+# st.markdown("### 📊 Distribución de Variables Numéricas por columna")
 
-# Configurar grid de subplots
-n_cols = 3  # columnas en el collage
-n_rows = int(np.ceil(len(col_numericas)/n_cols))
-fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*4, n_rows*3))
-axes = axes.flatten()
+# # Configurar grid de subplots
+# n_cols = 3  # columnas en el collage
+# n_rows = int(np.ceil(len(col_numericas)/n_cols))
+# fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*4, n_rows*3))
+# axes = axes.flatten()
 
-for i, col in enumerate(col_numericas):
-    sns.histplot(df[col], bins=30, kde=True, color='#1f4e79', ax=axes[i])
-    axes[i].set_title(col)
-    axes[i].set_xlabel('')
-    axes[i].set_ylabel('')
+# for i, col in enumerate(col_numericas):
+#     sns.histplot(df[col], bins=30, kde=True, color='#1f4e79', ax=axes[i])
+#     axes[i].set_title(col)
+#     axes[i].set_xlabel('')
+#     axes[i].set_ylabel('')
 
-# Quitar ejes vacíos si los hay
-for j in range(i+1, len(axes)):
-    fig.delaxes(axes[j])
+# # Quitar ejes vacíos si los hay
+# for j in range(i+1, len(axes)):
+#     fig.delaxes(axes[j])
 
-plt.tight_layout()
-st.pyplot(fig)
+# plt.tight_layout()
+# st.pyplot(fig)
+
 
 st.markdown("### 📊 Mapa de Correlación de Variables Numéricas por columna")
 
 # Seleccionar variables numéricas
-col_numericas = df.select_dtypes(include=[np.number]).columns.drop('label', errors='ignore')
+col_numericas = df.select_dtypes(
+    include=[np.number]).columns.drop('label', errors='ignore')
 
 # Calcular matriz de correlación
 corr_matrix = df[col_numericas].corr()
@@ -325,7 +329,8 @@ fig = px.imshow(
 )
 
 # Reducir tamaño de texto dentro de los cuadros
-fig.update_traces(textfont_size=10)  # ajusta según convenga, 10 es ~40% más pequeño que el default
+# ajusta según convenga, 10 es ~40% más pequeño que el default
+fig.update_traces(textfont_size=10)
 
 # Mejorar layout
 fig.update_layout(
@@ -360,7 +365,8 @@ saturación visual y ayuda a identificar rápidamente las relaciones clave.
 
 # Seleccionar variables numéricas
 # Tu código ya tiene esta línea
-col_numericas = df.select_dtypes(include=[np.number]).columns.drop('label', errors='ignore')
+col_numericas = df.select_dtypes(
+    include=[np.number]).columns.drop('label', errors='ignore')
 
 # Calcular matriz de correlación
 corr_matrix = df[col_numericas].corr()
@@ -442,7 +448,8 @@ for node, neighbors in G.adjacency():
     for neighbor in neighbors:
         corr_val = G.get_edge_data(node, neighbor)['correlation']
         correlations.append(f"{neighbor}: {corr_val:.2f}")
-    hover_text = f"<b>{node}</b><br>Correlaciones fuertes:<br>" + "<br>".join(correlations)
+    hover_text = f"<b>{node}</b><br>Correlaciones fuertes:<br>" + \
+        "<br>".join(correlations)
     node_text.append(hover_text)
 node_trace.text = node_text
 
