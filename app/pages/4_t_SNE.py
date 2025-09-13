@@ -1,60 +1,93 @@
 from app import st
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import KNNImputer
 
+# ============================================
+# Banner estilo profesional
+# ============================================
 st.set_page_config(page_title="t-SNE",
                    page_icon=":bar_chart:", layout="wide")
-st.title("t-Distributed Stochastic Neighbor Embedding (t-SNE)")
-st.write("""
-t-Distributed Stochastic Neighbor Embedding (t-SNE) es una técnica de reducción de
-dimensionalidad no supervisada que se utiliza principalmente para la visualización de datos
-de alta dimensión en espacios de menor dimensión (generalmente 2D o 3D). Fue desarrollado por
-Laurens van der Maaten y Geoffrey Hinton en 2008.
-""")
-st.write("""
-El objetivo principal de t-SNE es preservar las relaciones de proximidad entre los puntos de
-datos en el espacio de alta dimensión al mapearlos a un espacio de menor dimensión. A
-diferencia de otras técnicas de reducción de dimensionalidad, como PCA o LDA, t-SNE se
-enfoca en mantener las distancias locales entre los puntos de datos, lo que lo hace
-particularmente útil para visualizar estructuras complejas y agrupamientos en los datos.
-""")
-st.write("""
-El algoritmo t-SNE funciona en dos etapas principales:
-1. Cálculo de las probabilidades de similitud en el espacio de alta dimensión:
-   - Para cada par de puntos de datos, se calcula la probabilidad de que un punto
-     elija a otro como su vecino, basándose en una distribución gaussiana centrada
-     en el primer punto.
-   - Esto da lugar a una matriz de probabilidades que refleja las relaciones de
-     proximidad en el espacio original.
-2. Mapeo a un espacio de menor dimensión:
-   - Se inicializan aleatoriamente las posiciones de los puntos en el espacio de
-     menor dimensión.
-   - Se define una distribución t de Student para calcular las probabilidades de
-     similitud en el espacio de menor dimensión.
-   - El algoritmo minimiza la divergencia de Kullback-Leibler entre las dos
-     distribuciones de probabilidad (la del espacio original y la del espacio
-     reducido) utilizando un método de optimización, como el descenso de
-     gradiente.
-""")
-st.write("""
-t-SNE es ampliamente utilizado en diversas aplicaciones, como la visualización de datos
-genómicos, el análisis de imágenes, el procesamiento del lenguaje natural y la exploración de
-datos en general. Sin embargo, es importante tener en cuenta que t-SNE puede ser computacionalmente
-intensivo y sensible a los hiperparámetros, como la perplexidad y la tasa de aprendizaje, lo que
-requiere una cuidadosa selección y ajuste para obtener resultados óptimos.
-""")
-st.write("""
-En resumen, t-SNE es una poderosa herramienta para la visualización de datos de alta dimensión
-que ayuda a revelar estructuras y patrones ocultos en los datos, facilitando su interpretación
-y análisis.
-""")
-st.write("""Referencias:
-- van der Maaten, L., & Hinton, G. (2008). Visualizing data using t-SNE. Journal of Machine Learning Research, 9(Nov), 2579-2605.
-""")
-st.write("""
-- https://distill.pub/2016/misread-tsne/
-""")
-st.write("""- https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html
-""")
-st.write("""- https://lvdmaaten.github.io/tsne/
-""")
-st.write("""- https://www.youtube.com/watch?v=NEaUSP4YerM
+
+st.markdown("""
+<div style="background-color:#1f4e79; padding: 18px; border-radius: 10px; text-align:center; color: white;">
+    <h1 style="margin:0;">📉 t-Distributed Stochastic Neighbor Embedding (t-SNE)</h1>
+    <p style="margin:0; font-size:18px;">Reducción de dimensionalidad y visualización del dataset <i>db-cow-walking-IoT</i></p>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ============================================
+# Datos
+# ============================================
+df = st.session_state.df
+
+feature_cols = [col for col in df.columns if col != 'label' and df[col].dtype in [np.float64, np.int64]]
+X = df[feature_cols]
+y = df['label']
+
+# Imputación y escalado
+imputer = KNNImputer(n_neighbors=5)
+X_imputed = pd.DataFrame(imputer.fit_transform(X), columns=feature_cols)
+
+scaler = StandardScaler()
+X_scaled = pd.DataFrame(scaler.fit_transform(X_imputed), columns=feature_cols)
+
+
+# ============================================
+# t-SNE 2D
+# ============================================
+st.markdown("### Proyección t-SNE 2D del dataset")
+
+tsne_2d = TSNE(n_components=2, perplexity=30, learning_rate=200, random_state=42)
+X_tsne_2d = tsne_2d.fit_transform(X_scaled)
+
+df_tsne_2d = pd.DataFrame(X_tsne_2d, columns=['tSNE1', 'tSNE2'])
+df_tsne_2d['label'] = y.values
+
+fig_2d = px.scatter(
+    df_tsne_2d, x='tSNE1', y='tSNE2', color='label',
+    opacity=0.7, width=800, height=500,
+    title="Proyección t-SNE 2D (perplexity=30, learning_rate=200)"
+)
+st.plotly_chart(fig_2d, use_container_width=True)
+
+
+# ============================================
+# t-SNE 3D
+# ============================================
+st.markdown("### Proyección t-SNE 3D interactiva")
+
+tsne_3d = TSNE(n_components=3, perplexity=30, learning_rate=200, random_state=42)
+X_tsne_3d = tsne_3d.fit_transform(X_scaled)
+
+df_tsne_3d = pd.DataFrame(X_tsne_3d, columns=['tSNE1', 'tSNE2', 'tSNE3'])
+df_tsne_3d['label'] = y.values
+
+fig_3d = px.scatter_3d(
+    df_tsne_3d, x='tSNE1', y='tSNE2', z='tSNE3',
+    color='label', opacity=0.7,
+    width=800, height=600,
+    title="Proyección t-SNE 3D interactiva"
+)
+fig_3d.update_traces(marker=dict(size=4))
+st.plotly_chart(fig_3d, use_container_width=True)
+
+
+# ============================================
+# Conclusión
+# ============================================
+st.markdown("""
+### 🔎 Conclusiones
+
+- t-SNE permite visualizar la estructura de los datos de sensores en **2D y 3D**, preservando relaciones locales.
+- Los clusters visibles reflejan agrupamientos naturales según el comportamiento de las vacas.
+- Ajustando los hiperparámetros `perplexity` y `learning_rate`, se puede enfatizar la preservación global o local de la estructura.
+- Esta visualización complementa PCA, ayudando a identificar patrones que podrían no ser lineales.
 """)
