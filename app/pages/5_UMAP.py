@@ -1,12 +1,9 @@
 import streamlit as st
-from app import st
-import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
-from sklearn.preprocessing import StandardScaler
-from sklearn.impute import KNNImputer
-import umap
+from data_loader import get_full_data, preprocess_data, compute_umap, init_data, load_umap_data, set_global_config
+
+set_global_config()
 
 # ============================================
 # Banner estilo profesional
@@ -21,50 +18,44 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Inicializar datos y gráficos
+init_data()
+load_umap_data()
 
 # ============================================
-# Datos
+# Datos preprocesados y cacheados
 # ============================================
-df = st.session_state.df
 
-feature_cols = [col for col in df.columns if col != 'label' and df[col].dtype in [np.float64, np.int64]]
-X = df[feature_cols]
-y = df['label']
+if "X_umap_2d" not in st.session_state or "X_umap_3d" not in st.session_state or "umap_y" not in st.session_state:
+    if "df" not in st.session_state:
+        init_data()        # carga df, muestra y gráficos
+    load_umap_data()       # calcula UMAP solo si no existe
 
-# Imputación y escalado
-imputer = KNNImputer(n_neighbors=5)
-X_imputed = pd.DataFrame(imputer.fit_transform(X), columns=feature_cols)
-
-scaler = StandardScaler()
-X_scaled = pd.DataFrame(scaler.fit_transform(X_imputed), columns=feature_cols)
+# Recuperar de session_state
+X_umap_2d = st.session_state.X_umap_2d
+X_umap_3d = st.session_state.X_umap_3d
+y = st.session_state.umap_y
 
 
 # ============================================
-# UMAP 2D
+# Graficar UMAP 2D
 # ============================================
 st.markdown("### Proyección UMAP 2D del dataset")
-
-umap_2d = umap.UMAP(n_components=2, random_state=42)
-X_umap_2d = umap_2d.fit_transform(X_scaled)
 
 df_umap_2d = pd.DataFrame(X_umap_2d, columns=['UMAP1', 'UMAP2'])
 df_umap_2d['label'] = y.values
 
 fig_2d = px.scatter(
     df_umap_2d, x='UMAP1', y='UMAP2', color='label',
-    opacity=0.7, width=800, height=500,
+    opacity=0.7, width=800, height=650,
     title="Proyección UMAP 2D"
 )
 st.plotly_chart(fig_2d, use_container_width=True)
 
-
 # ============================================
-# UMAP 3D
+# Graficar UMAP 3D
 # ============================================
 st.markdown("### Proyección UMAP 3D interactiva")
-
-umap_3d = umap.UMAP(n_components=3, random_state=42)
-X_umap_3d = umap_3d.fit_transform(X_scaled)
 
 df_umap_3d = pd.DataFrame(X_umap_3d, columns=['UMAP1', 'UMAP2', 'UMAP3'])
 df_umap_3d['label'] = y.values
@@ -78,7 +69,6 @@ fig_3d = px.scatter_3d(
 fig_3d.update_traces(marker=dict(size=4))
 st.plotly_chart(fig_3d, use_container_width=True)
 
-
 # ============================================
 # Conclusión
 # ============================================
@@ -90,3 +80,6 @@ st.markdown("""
 - Es más rápido que t-SNE y generalmente conserva mejor la estructura global del dataset.
 - Esta visualización complementa PCA y t-SNE, ayudando a identificar patrones lineales y no lineales en los datos.
 """)
+st.divider()
+if st.button("Volver a la Página Principal"):
+    st.switch_page("app.py")

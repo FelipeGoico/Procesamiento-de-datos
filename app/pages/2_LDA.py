@@ -1,25 +1,19 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 import plotly.express as px
-import matplotlib.pyplot as plt
-from data_loader import get_preprocessed_data  # ✅ Correcto
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from data_loader import get_preprocessed_data, init_data, init_tsne, load_umap_data, set_global_config
 
-# --------------------------
-# Obtener datos preprocesados
-# --------------------------
-X_train, X_test, y_train, y_test = get_preprocessed_data()
-
+set_global_config()
+init_data()
 # ===========================
-# Configuración página
+# Configuración de la página
 # ===========================
-st.set_page_config(
-    page_title="LDA - Dataset db-cow-walking-IoT",
-    page_icon=":bar_chart:",
-    layout="wide"
-)
+# st.set_page_config(
+#     page_title="LDA - Dataset db-cow-walking-IoT",
+#     page_icon=":bar_chart:",
+#     layout="wide"
+# )
 
 # ===========================
 # Banner
@@ -46,15 +40,26 @@ El resultado son nuevas características (componentes discriminantes) útiles pa
 </div>
 """, unsafe_allow_html=True)
 
-# --------------------------
+# ===========================
+# Datos ya preprocesados
+# ===========================
+
+
+if "preprocessed" not in st.session_state:
+    X_train, X_test, y_train, y_test = get_preprocessed_data()
+    st.session_state.preprocessed = (X_train, X_test, y_train, y_test)
+else:
+    X_train, X_test, y_train, y_test = st.session_state.preprocessed
+
+# ===========================
 # LDA 2D
-# --------------------------
+# ===========================
 lda = LDA(n_components=2)
 X_train_lda = lda.fit_transform(X_train, y_train)
 X_test_lda = lda.transform(X_test)
 
 df_lda = pd.DataFrame(X_train_lda, columns=['LD1', 'LD2'])
-df_lda['label'] = y_train.values
+df_lda['label'] = y_train
 
 fig_lda = px.scatter(
     df_lda, x='LD1', y='LD2', color='label',
@@ -63,8 +68,15 @@ fig_lda = px.scatter(
 )
 st.plotly_chart(fig_lda, use_container_width=True)
 
-# --------------------------
-# Información adicional
-# --------------------------
+# ===========================
+# Explicación de componentes
+# ===========================
 st.markdown("### 🔹 Explicación de componentes")
-st.write(f"Explained variance ratio (aprox. discriminación entre clases): {lda.explained_variance_ratio_}")
+st.write(
+    f"Explained variance ratio (aprox. discriminación entre clases): {lda.explained_variance_ratio_}"
+)
+st.divider()
+if st.button("Volver a la Página Principal"):
+    st.switch_page("app.py")
+init_tsne()
+load_umap_data()

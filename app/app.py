@@ -2,25 +2,14 @@ import base64
 import streamlit as st
 from pathlib import Path
 import pandas as pd
-from data_loader import df, get_graph
+from data_loader import get_full_data, get_sample_data, get_graph, prepare_data, init_data, init_tsne, load_umap_data, set_global_config
+
 
 # ===========================
 # Configuración página
 # ===========================
-st.set_page_config(
-    page_title="Presentación del Proyecto de investigación",
-    page_icon=":bar_chart:",
-    layout="wide"
-)
 
-# Cargar dataset
-if "df" not in st.session_state:
-    st.session_state.df = pd.read_csv("../data_processed.csv")
-
-# Pre-cargar gráficos apenas se inicia la app
-if "graphs" not in st.session_state:
-    st.session_state.graphs = get_graph(st.session_state.df)
-fig, col_numericas = st.session_state.graphs
+set_global_config()
 
 
 # ===========================
@@ -34,13 +23,6 @@ IMAGE_PATH_03 = IMG_DIR / "fvets-12-1630083-g003.jpg"
 IMAGE_PATH_04 = IMG_DIR / "fvets-12-1630083-g004.jpg"
 IMAGE_PATH_05 = IMG_DIR / "fvets-12-1630083-g005.jpg"
 
-
-# ===========================
-# Rutas de imágenes
-# ===========================
-BASE_DIR = Path(__file__).resolve().parent.parent
-IMG_DIR = BASE_DIR / "img"
-IMAGE_PATH_05 = IMG_DIR / "fvets-12-1630083-g005.jpg"
 
 # ===========================
 # Convertir imagen a base64
@@ -334,3 +316,36 @@ la relevancia de nuestras columnas derivadas.
 st.divider()
 if st.button("🔍 Ir al Análisis Exploratorio (EDA)"):
     st.switch_page("pages/1_EDA.py")
+if st.button("🔍 Ir al Análisis Discriminante Lineal (LDA)"):
+    st.switch_page("pages/2_LDA.py")
+if st.button("🔍 Ir al Análisis de Componentes Principales (PCA)"):
+    st.switch_page("pages/3_PCA.py")
+if st.button("🔍 Ir al t-Distributed Stochastic Neighbor Embedding (t-SNE)"):
+    st.switch_page("pages/4_t_SNE.py")
+if st.button("🔍 Ir al Uniform Manifold Approximation and Projection (UMAP)"):
+    st.switch_page("pages/5_UMAP.py")
+
+
+# Inicializar datos y gráficos
+init_data()
+init_tsne()
+load_umap_data()
+# Cargar dataset
+if "df" not in st.session_state:
+    st.session_state.df = pd.read_csv("../data_processed.csv")
+
+# Pre-cargar gráficos apenas se inicia la app
+if "graphs" not in st.session_state:
+    st.session_state.graphs = get_graph(st.session_state.df)
+fig, col_numericas = st.session_state.graphs
+
+# Convertir el dataframe a CSV (en memoria, sin index)
+csv = get_full_data().to_csv(index=False)
+
+# Botón de descarga
+st.download_button(
+    label="📥 Descargar Datos CSV",
+    data=csv,
+    file_name="datos.csv",
+    mime="text/csv",
+)

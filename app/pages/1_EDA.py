@@ -1,3 +1,7 @@
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import KNNImputer
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -8,10 +12,16 @@ import networkx as nx
 import plotly.graph_objects as go
 import plotly.express as px
 from sklearn.decomposition import PCA
+from data_loader import init_data, init_tsne, load_umap_data, set_global_config
+
+set_global_config()
+
+# Inicializar datos y gráficos
+init_data()
 
 
+# Usar el dataframe desde session_state
 df = st.session_state.df
-
 
 # ===========================
 # Estilo CSS personalizado
@@ -50,15 +60,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 IMG_DIR = BASE_DIR / "img"
 IMAGE_PATH_00 = IMG_DIR / "fvets-12-1630083-g000.jpg"
 
-
-# ===========================
-# Configuración página
-# ===========================
-st.set_page_config(
-    page_title="EDA - Dataset db-cow-walking-IoT",
-    page_icon=":mag:",
-    layout="wide"
-)
 
 # ===========================
 # Banner
@@ -287,11 +288,12 @@ st.dataframe(na_df, use_container_width=True)
 # Mensaje de alerta si hay NA
 threshold = 5  # porcentaje considerado crítico
 if any(na_percent > threshold):
-    st.warning(f"Hay columnas con más del {threshold}% de valores faltantes. Considera imputar o limpiar antes del análisis.")
+    st.warning(
+        f"Hay columnas con más del {threshold}% de valores faltantes. Considera imputar o limpiar antes del análisis.")
 else:
     st.success("No se detectan valores faltantes relevantes.")
 
- 
+
 st.markdown("""
 ### 📊 Distribución de Variables Numéricas
 
@@ -341,7 +343,6 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 
-
 # ==========================================================
 # Título y descripción
 # ==========================================================
@@ -365,7 +366,8 @@ Solo se muestran correlaciones > 0.7 o < -0.7
 # ==========================================================
 # Preparar matriz de correlación y edges
 # ==========================================================
-col_numericas = df.select_dtypes(include=[np.number]).columns.drop('label', errors='ignore')
+col_numericas = df.select_dtypes(
+    include=[np.number]).columns.drop('label', errors='ignore')
 corr_matrix = df[col_numericas].corr()
 
 threshold = 0.7
@@ -429,13 +431,15 @@ for node, neighbors in G.adjacency():
     for neighbor in neighbors:
         corr_val = G.get_edge_data(node, neighbor)['correlation']
         correlations.append(f"{neighbor}: {corr_val:.2f}")
-    hover_text = f"<b>{node}</b><br>Correlaciones fuertes:<br>" + "<br>".join(correlations)
+    hover_text = f"<b>{node}</b><br>Correlaciones fuertes:<br>" + \
+        "<br>".join(correlations)
     node_text.append(hover_text)
 
 node_trace = go.Scatter(
     x=node_x, y=node_y,
     mode='markers+text',
-    text=[node for node in G.nodes()],     # solo el nombre visible sobre el nodo
+    # solo el nombre visible sobre el nodo
+    text=[node for node in G.nodes()],
     hovertext=node_text,                   # información detallada al pasar el cursor
     hoverinfo='text',
     textposition='top center',
@@ -499,24 +503,24 @@ Esto incluye:
 st.markdown("### 4.1 Imputación de Valores Faltantes (KNNImputer)")
 
 # Seleccionar features numéricas (excluir Time y label si no son numéricas)
-feature_cols = [col for col in df.columns if col != 'label' and df[col].dtype in [np.float64, np.int64]]
+feature_cols = [col for col in df.columns if col !=
+                'label' and df[col].dtype in [np.float64, np.int64]]
 X = df[feature_cols]
 y = df['label']
 
 # Imputación
-from sklearn.impute import KNNImputer
 imputer = KNNImputer(n_neighbors=5)
 X_imputed = pd.DataFrame(imputer.fit_transform(X), columns=feature_cols)
 
 st.write("✅ Imputación completada. Se utilizó KNNImputer considerando correlación entre sensores.")
-st.write("% NA después de imputación:", round(X_imputed.isna().sum().sum()/X_imputed.size*100, 2), "%")
+st.write("% NA después de imputación:", round(
+    X_imputed.isna().sum().sum()/X_imputed.size*100, 2), "%")
 
 # --------------------------
 # 4.2 Escalado (StandardScaler)
 # --------------------------
 st.markdown("### 4.2 Escalado de Variables Numéricas (StandardScaler)")
 
-from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 X_scaled = pd.DataFrame(scaler.fit_transform(X_imputed), columns=feature_cols)
 
@@ -527,8 +531,6 @@ st.write("✅ Escalado completado. Las variables numéricas ahora tienen media=0
 # --------------------------
 st.markdown("### 4.3 Codificación de Etiqueta y División Train/Test")
 
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
 
 le = LabelEncoder()
 y_encoded = le.fit_transform(y)
@@ -539,4 +541,11 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 st.write(f"✅ División completada: Train={X_train.shape}, Test={X_test.shape}")
 st.write("La variable target ha sido codificada con LabelEncoder para su uso en modelos categóricos.")
-
+# ===========================
+# Botón de navegación al LDA
+# ===========================
+st.divider()
+if st.button("Volver a la Página Principal"):
+    st.switch_page("app.py")
+init_tsne()
+load_umap_data()

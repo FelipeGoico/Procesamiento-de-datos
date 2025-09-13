@@ -1,8 +1,7 @@
-<<<<<<< HEAD
-import app import st
-=======
-from app import *
->>>>>>> origin/main
+import streamlit as st
+from data_loader import set_global_config
+
+set_global_config()
 
 
 st.write("""# Resumen del Examen Final
@@ -12,8 +11,7 @@ se presenta un resumen de cada una de estas técnicas y sus aplicaciones.
 """)
 st.set_page_config(page_title="Resumen",
                    page_icon=":bar_chart:", layout="wide")
-<<<<<<< HEAD
-=======
+
 st.html("""
 <!DOCTYPE html>
 <html lang="es">
@@ -120,7 +118,7 @@ st.html("""
 st.latex(r"""\text{acc\_magnitude} = \sqrt{AX^2 + AY^2 + AZ^2}""")
 st.latex(r"""\text{gyro\_magnitude} = \sqrt{GX^2 + GY^2 + GZ^2}""")
 st.html(
-        """
+    """
 
       </li>
       <li>Estadísticos móviles (ventanas deslizantes, por ejemplo de 5 muestras) para media y desviación estándar de aceleración y giro.</li>
@@ -155,4 +153,3 @@ st.html(
 </body>
 </html>
 """)
->>>>>>> origin/main
