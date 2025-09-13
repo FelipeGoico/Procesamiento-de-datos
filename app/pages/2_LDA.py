@@ -30,12 +30,12 @@ st.markdown("""
 # ===========================
 st.markdown("""
 <div style="text-align: justify; margin-top: 20px;">
-El <b>Análisis Discriminante Lineal (LDA)</b> es una técnica supervisada utilizada para reducir la dimensionalidad 
-de un conjunto de datos mientras se maximiza la separabilidad entre clases.  
-A diferencia del PCA, que es no supervisado, el LDA utiliza las etiquetas de clase para encontrar las combinaciones lineales de características que mejor separan las clases.  
+El <b>Análisis Discriminante Lineal (LDA)</b> es una técnica supervisada utilizada para reducir la dimensionalidad
+de un conjunto de datos mientras se maximiza la separabilidad entre clases.
+A diferencia del PCA, que es no supervisado, el LDA utiliza las etiquetas de clase para encontrar las combinaciones lineales de características que mejor separan las clases.
 
-Esto se logra proyectando los datos en un espacio de menor dimensión donde las clases están lo más separadas posible, 
-maximizando la razón de varianza entre clases frente a la varianza dentro de las clases.  
+Esto se logra proyectando los datos en un espacio de menor dimensión donde las clases están lo más separadas posible,
+maximizando la razón de varianza entre clases frente a la varianza dentro de las clases.
 El resultado son nuevas características (componentes discriminantes) útiles para entrenar modelos de clasificación más precisos.
 </div>
 """, unsafe_allow_html=True)
@@ -73,8 +73,14 @@ st.plotly_chart(fig_lda, use_container_width=True)
 # ===========================
 st.markdown("### 🔹 Explicación de componentes")
 st.write(
-    f"Explained variance ratio (aprox. discriminación entre clases): {lda.explained_variance_ratio_}"
-)
+    f"Explained variance ratio (aprox. discriminación entre clases): {lda.explained_variance_ratio_}")
+st.markdown("""
+<div style="text-align: justify; margin-top: 20px;">
+La mayoría de los datos se agrupan en el lado derecho del gráfico, donde se mezclan Walking y Grazing
+con algunas instancias de Resting y Miscellaneous behaviors.
+              
+En general, el LDA ha logrado una buena separación para algunas clases, pero la alta superposición entre
+Grazing y Walking indica que no es la herramienta perfecta para discriminar entre todos los comportamientos.""", unsafe_allow_html=True)
 st.divider()
 if st.button("Volver a la Página Principal"):
     st.switch_page("app.py")

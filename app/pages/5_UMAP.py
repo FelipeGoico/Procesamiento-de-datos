@@ -40,7 +40,7 @@ y = st.session_state.umap_y
 # ============================================
 # Graficar UMAP 2D
 # ============================================
-st.markdown("### Proyección UMAP 2D del dataset")
+st.markdown("### Proyección UMAP 2D")
 
 df_umap_2d = pd.DataFrame(X_umap_2d, columns=['UMAP1', 'UMAP2'])
 df_umap_2d['label'] = y.values
@@ -51,6 +51,29 @@ fig_2d = px.scatter(
     title="Proyección UMAP 2D"
 )
 st.plotly_chart(fig_2d, use_container_width=True)
+
+st.markdown("""
+            
+            <div style="text-align: justify; margin-top:20px;">
+        
+            #### Proyección UMAP 2D del Dataset
+<ul>
+<li><b>
+Tipo:</b> Visualización no lineal de reducción dimensional (UMAP) en datos preprocesados IMU (~8000 muestras). Ejes: UMAP1 (X, estructura global/local), UMAP2 (Y, relaciones vecinales). Conserva topología global mejor que t-SNE, interactiva en Plotly.</li>
+
+<li><b>Patrones por Clase:</b>
+<ul>
+<li><b>Rojo (Walking):</b> Clusters densos y extendidos en izquierda/centro (alta variabilidad en desplazamientos/aceleraciones), con formas irregulares.</li>
+<li><b>Rosa (Resting):</b> Compacto en centro-derecha (baja dispersión, inactividad estática).</li>
+<li><b>Azul (Grazing):</b> Pequeños grupos dispersos en derecha (ritmos moderados/estacionarios).</li>
+<li><b>Azul claro (Miscellaneous):</b> Solapado y esparcido (transiciones/ruido heterogéneo).</li>
+</li>
+</ul>
+
+<li><b>Separabilidad:</b> UMAP resalta clusters naturales y transiciones suaves.</li>
+<li><b>Implicaciones:</b> Valida patrones en comportamientos vacas (e.g., walking vs. resting); outliers en UMAP1 negativo indican anomalías (estrés). Ideal para EDA escalable; en Streamlit, rota/zoom para detalles.</li>
+            
+""", unsafe_allow_html=True)
 
 # ============================================
 # Graficar UMAP 3D
@@ -69,6 +92,18 @@ fig_3d = px.scatter_3d(
 fig_3d.update_traces(marker=dict(size=4))
 st.plotly_chart(fig_3d, use_container_width=True)
 
+st.markdown("""
+            #### Descripción del Gráfico
+El gráfico representa una <b>proyección 3D interactiva de UMAP</b> (Uniform Manifold Approximation and Projection) del dataset Dataset. Muestra puntos dispersos en un espacio tridimensional (ejes: UMAP1, UMAP2, UMAP3), coloreados por categorías de comportamiento de vacas:
+<ul>
+
+<li><b>Miscellaneous behaviors:</b> Azul claro (puntos dispersos, posiblemente outliers).</li>
+<li><b>Grazing:</b> Rosa (cluster central compacto).</li>
+<li><b>Resting:</b> Rojo (agrupamiento denso en la parte superior).</li>
+<li><b>Walking:</b> Azul (distribuido en áreas periféricas).</li>
+</ul>
+Se observan <b>clusters bien separados</b> que reflejan patrones naturales de actividad, con mayor densidad en las regiones de resting y grazing. El rango de ejes va de -5 a 15 aproximadamente, destacando la estructura no lineal preservada por UMAP para visualización de datos de sensores IMU.
+""", unsafe_allow_html=True)
 # ============================================
 # Conclusión
 # ============================================

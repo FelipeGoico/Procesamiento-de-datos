@@ -1,155 +1,142 @@
 import streamlit as st
-from data_loader import set_global_config
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, silhouette_score, adjusted_rand_score, normalized_mutual_info_score
+from sklearn.cluster import KMeans
+from data_loader import (
+    init_data, init_tsne, load_umap_data,
+    set_global_config, get_preprocessed_data
+)
 
+# ---------------------------------------------------
+# Configuración global
+# ---------------------------------------------------
 set_global_config()
 
+# ---------------------------------------------------
+# Inicialización de datos
+# ---------------------------------------------------
+if "df" not in st.session_state:
+    init_data()
 
-st.write("""# Resumen del Examen Final
-Este examen final abarca diversas técnicas de procesamiento de datos y análisis estadístico, incluyendo Análisis
-Exploratorio de Datos (EDA), Análisis Discriminante Lineal (LDA) y Análisis de Componentes Principales (PCA). A continuación,
-se presenta un resumen de cada una de estas técnicas y sus aplicaciones.
-""")
-st.set_page_config(page_title="Resumen",
-                   page_icon=":bar_chart:", layout="wide")
+df = st.session_state.df
 
-st.html("""
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Análisis Exploratorio y Proyección: Proyecto IoT Collar – db-cow-walking-IoT</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #2c3e50;
-      line-height: 1.6;
-      margin: 40px;
-    }
-    h1, h2, h3 {
-      color: #1e3799;
-    }
-    .section {
-      margin-bottom: 40px;
-    }
-    .image-center {
-      text-align: center;
-      margin: 20px 0;
-    }
-    .image-center img {
-      max-width: 100%;
-      height: auto;
-      border: 2px solid #1e3799;
-      border-radius: 8px;
-    }
-    .caption {
-      font-size: 0.9em;
-      color: #34495e;
-    }
-    .formula-block {
-      background: #f6f6f6;
-      padding: 15px;
-      border-left: 5px solid #1e3799;
-      margin: 15px 0;
-      font-style: italic;
-    }
-  </style>
-</head>
-<body>
+# ---------------------------------------------------
+# Preprocesamiento
+# ---------------------------------------------------
+if "preprocessed" not in st.session_state:
+    X_train, X_test, y_train, y_test = get_preprocessed_data()
+    # Combinar train + test
+    X_full = np.vstack([X_train, X_test])
+    y_full = np.hstack([y_train, y_test])
+    # Guardar solo los datos completos
+    st.session_state.preprocessed = (X_full, y_full)
+else:
+    X_train, X_test, y_train, y_test = st.session_state.preprocessed
+    X_full = np.vstack([X_train, X_test])
+    y_full = np.hstack([y_train, y_test])
 
-  <h1>Análisis Exploratorio & Proyección: db-cow-walking-IoT</h1>
+# ---------------------------------------------------
+# Inicialización embeddings t-SNE y UMAP
+# ---------------------------------------------------
+if "tsne_2d" not in st.session_state or "tsne_y" not in st.session_state:
+    init_tsne()
 
-  <div class="section" id="introduccion">
-    <h2>1. Introducción</h2>
-    <p>
-      Este proyecto se basa en el estudio de un dataset público reciente que registra comportamientos de vacas de pastoreo — caminata, pastoreo y reposo — mediante collares IoT con sensores IMU
-      (MPU9250 y BNO055) y validación por video PTZ. El paper original aporta un dataset estructurado con 441 eventos etiquetados, más de 7 h de grabación, y más de 3 GB de datos crudos, lo que lo convierte en un punto de partida sólido. :contentReference[oaicite:0]{index=0}
-    </p>
-    <p>
-      Nuestro objetivo específico es reutilizar este dataset para: (1) generar nuevas variables derivadas, (2) aplicar reducción de dimensionalidad, y (3) crear una interfaz interactiva en Streamlit que posibilite análisis exploratorio y visualización avanzada, con visión futura hacia integración con drones para monitoreo territorial.
-    </p>
-  </div>
+if "X_umap_2d" not in st.session_state or "umap_y" not in st.session_state:
+    load_umap_data()
 
-  <div class="section" id="dataset_original">
-    <h2>2. Proyecto Original: Descripción técnica</h2>
-    <h3>2.1 Recolección de datos</h3>
-    <ul>
-      <li>Ubicación: Granja Experimental Maquehue, Universidad de La Frontera, Temuco, Chile. :contentReference[oaicite:1]{index=1}</li>
-      <li>Sujetos: 10 vacas lecheras con collares IoT, colocados en el cuello. :contentReference[oaicite:2]{index=2}</li>
-      <li>Sensores:  
-        <ul>
-          <li><b>MPU9250</b>: IMU de 9 ejes, económico, registra aceleración, giroscopio y magnetómetro. :contentReference[oaicite:3]{index=3}</li>
-          <li><b>BNO055</b>: IMU fusionado, permite medir orientación como cuaterniones para estimar marco mundial/world frame. :contentReference[oaicite:4]{index=4}</li>
-        </ul>
-      </li>
-      <li>Frecuencia de muestreo: 10 Hz. :contentReference[oaicite:5]{index=5}</li>
-      <li>Validación visual: cámaras PTZ con visión nocturna, sincronizadas con las señales de los sensores. :contentReference[oaicite:6]{index=6}</li>
-      <li>Estructura de almacenamiento: archivos CSV por evento (nombre codificado: evento, comportamiento, identificador de vaca, fecha–hora), organizados jerárquicamente por tipo de comportamiento. :contentReference[oaicite:7]{index=7}</li>
-    </ul>
+X_tsne = st.session_state.tsne_2d
+X_umap = st.session_state.X_umap_2d
+y = st.session_state.tsne_y  # mismas etiquetas para todos los embeddings
 
-    <h3>2.2 Variables originales y procesamiento</h3>
-    <p>
-      Las señales registradas incluyen aceleración lineal, velocidad angular, magnetómetro, cuaterniones (solo BNO055) y GPS. Variables medidas tanto en marco corporal (“body frame”) como mundial (“world frame”) permiten estimaciones más robustas. :contentReference[oaicite:8]{index=8}
-    </p>
-    <p>
-      Para transformar aceleraciones del marco corporal al mundial se usan matrices de rotación derivadas de las orientaciones dadas por los cuaterniones. Además, los datos crudos deben escalarse a unidades físicas mediante factores de escala según sensibilidad y rango del sensor. :contentReference[oaicite:9]{index=9}
-    </p>
-  </div>
+# ---------------------------------------------------
+# Función KNN
+# ---------------------------------------------------
 
-  <div class="section" id="imagenes">
-    <h2>3. Ilustraciones relevantes</h2>
 
-    <div class="image-center">
-      <img src="img/fvets-12-1630083-g002.jpg" alt="Mapa de localidad Maquehue" >
-      <p class="caption">Figura: Localización de la Granja Experimental Maquehue, Temuco, Chile (Mapa usado en publicación original).</p>
-    </div>
+def evaluate_knn(emb_train, emb_test, y_train, y_test):
+    knn = KNeighborsClassifier(n_neighbors=5)
+    knn.fit(emb_train, y_train)
+    y_pred = knn.predict(emb_test)
+    return accuracy_score(y_test, y_pred)
 
-    <!-- Puedes agregar más imágenes si las tienes (sensor, montaje del collar, etc.) -->
-  </div>
 
-  <div class="section" id="variables_derivadas">
-    <h2>4. Variables derivadas & Reducción de Dimensionalidad</h2>
-    <p>
-      Basándonos en los datos originales, hemos generado variables adicionales útiles para análisis y modelado:
-    </p>
-    <ul>
-      <li>Magnitudes de aceleración y giroscopio:
+# ---------------------------------------------------
+# Evaluación KNN
+# ---------------------------------------------------
+# Para PCA/LDA usamos X_full dividido en train/test
+X_train, X_test, y_train, y_test = train_test_split(
+    X_full, y_full, test_size=0.2, random_state=42, stratify=y_full
+)
 
-        """)
-st.latex(r"""\text{acc\_magnitude} = \sqrt{AX^2 + AY^2 + AZ^2}""")
-st.latex(r"""\text{gyro\_magnitude} = \sqrt{GX^2 + GY^2 + GZ^2}""")
-st.html(
-    """
+acc_pca = evaluate_knn(X_train, X_test, y_train, y_test)
+acc_lda = evaluate_knn(X_train, X_test, y_train, y_test)
+# Para t-SNE y UMAP evaluamos con todos los datos (no hacemos train/test)
+acc_tsne = evaluate_knn(X_tsne, X_tsne, y, y)
+acc_umap = evaluate_knn(X_umap, X_umap, y, y)
 
-      </li>
-      <li>Estadísticos móviles (ventanas deslizantes, por ejemplo de 5 muestras) para media y desviación estándar de aceleración y giro.</li>
-      <li>Indicadores binarios: “actividad extrema”, “inquietud”, etc., usando umbrales basados en la variabilidad de señales.</li>
-    </ul>
-    <p>
-      Para la reducción de dimensionalidad, consideraremos técnicas como <b>PCA (Análisis de Componentes Principales)</b>, <b>Selección de características</b> (por ejemplo, importancia por permutación) y/o técnicas de embedding (t-SNE, UMAP) para visualización de relaciones entre eventos.
-    </p>
-  </div>
+# ---------------------------------------------------
+# Función clustering
+# ---------------------------------------------------
 
-  <div class="section" id="metodologia_propuesta">
-    <h2>5. Metodología propuesta para mi proyecto</h2>
-    <ol>
-      <li>Preprocesamiento: limpiar señales, sincronizar timestamps, escalar valores, detectar y manejar outliers.</li>
-      <li>Generación de variables derivadas (como en sección anterior), y creación de dataset estructurado.</li>
-      <li>División de datos para entrenamiento / validación, experimentos con diferentes algoritmos supervisados: SVM, Random Forest, etc.</li>
-      <li>Reducción de dimensionalidad y visualización en Streamlit, permitiendo explorar comportamientos por vaca, por evento, y visualizar componentes principales.</li>
-      <li>Proyección futura hacia drones: usar sensores locales + cámara aérea + GPS para ampliar cobertura, capturar variables ambientales (temperatura, viento, visual), sincronizar con los datos del collar, para detectar patrones más complejos (como posibles signos de estrés o enfermedad).</li>
-    </ol>
-  </div>
 
-  <div class="section" id="conclusion">
-    <h2>6. Conclusiones</h2>
-    <p>
-      El dataset original proporciona una base sólida: gran riqueza en señales IMU, etiquetado de comportamientos, estructura clara y buenos ejemplos de uso en clasificación. Sin embargo, mi proyecto se diferencia al incorporar variables derivadas, visualizar de forma interactiva, y preparar el camino hacia integración con sistemas aéreos (drones) para monitoreo territorial.
-    </p>
-    <p>
-      Se espera que, al aplicar reducción de dimensionalidad y crear una app en Streamlit, los resultados sean fácilmente interpretables por distintos actores (investigadores, veterinarios, productores), además de escalables. La colaboración futura podría involucrar recopilación adicional de datos, sensores ambientales, y validación mediante drones para mejorar la resolución espacial del monitoreo.
-    </p>
-  </div>
+def evaluate_clustering(embedding, y_true):
+    num_clusters = len(np.unique(y_true))
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+    cluster_labels = kmeans.fit_predict(embedding)
+    sil = silhouette_score(embedding, cluster_labels)
+    ari = adjusted_rand_score(y_true, cluster_labels)
+    nmi = normalized_mutual_info_score(y_true, cluster_labels)
+    return sil, ari, nmi
 
-</body>
-</html>
-""")
+
+sil_pca, ari_pca, nmi_pca = evaluate_clustering(X_full, y_full)
+sil_lda, ari_lda, nmi_lda = evaluate_clustering(X_full, y_full)
+sil_tsne, ari_tsne, nmi_tsne = evaluate_clustering(X_tsne, y)
+sil_umap, ari_umap, nmi_umap = evaluate_clustering(X_umap, y)
+
+
+st.markdown("""
+            <div style="text-align: justify; margin-top:20px;">
+
+### Resumen del Examen Final: Comparación de Métodos de Reducción de Dimensionalidad
+
+Este examen final abarca técnicas de procesamiento de datos y análisis estadístico. La tabla compara cuatro métodos populares de reducción de dimensionalidad —PCA, LDA, t-SNE y UMAP— en métricas clave de evaluación para una tarea de clasificación/agrupamiento (usando KNN para la precisión). Estas métricas incluyen el rendimiento downstream (Precisión con KNN), la calidad interna del agrupamiento (Puntuación de Silueta) y la concordancia con la verdad terreno (ARI y NMI). Valores más altos son generalmente mejores para todas las métricas, excepto ARI que puede ser negativo (indicando una concordancia peor que aleatoria).
+
+Aquí va un desglose estructurado de los resultados:
+
+  """, unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# Tabla comparativa final
+# ---------------------------------------------------
+results = pd.DataFrame({
+    'Método': ['PCA', 'LDA', 't-SNE', 'UMAP'],
+    'Accuracy KNN': [acc_pca, acc_lda, acc_tsne, acc_umap],
+    'Silhouette': [sil_pca, sil_lda, sil_tsne, sil_umap],
+    'ARI (opcional)': [ari_pca, ari_lda, ari_tsne, ari_umap],
+    'NMI (opcional)': [nmi_pca, nmi_lda, nmi_tsne, nmi_umap]
+})
+
+st.dataframe(results.set_index('Método').style.format({
+    'Accuracy KNN': '{:.3f}',
+    'Silhouette': '{:.3f}',
+    'ARI (opcional)': '{:.3f}',
+    'NMI (opcional)': '{:.3f}'
+}))
+
+st.markdown("""
+#### Perspectivas Clave
+<ul><li><b>Mejor para Precisión de Clasificación (KNN):</b> t-SNE destaca con la puntuación más alta (0.942), lo que sugiere que preserva mejor la estructura discriminativa para la clasificación basada en KNN. UMAP sigue de cerca (0.930), mientras que PCA y LDA empatan en un sólido pero menor rendimiento (0.914).</li>
+<li><b>Mejor para Calidad de Agrupamiento (Silueta):</b> UMAP lidera con 0.442, indicando agrupamientos más compactos y separables en el espacio reducido, seguido por t-SNE (0.407). PCA y LDA quedan atrás con 0.115, lo que implica agrupamientos menos definidos en métodos lineales.</li>
+<li><b>Concordancia Externa de Agrupamiento (ARI & NMI):</b> PCA y LDA brillan con valores altos y similares (ARI 0.233, NMI 0.239), mostrando una fuerte recuperación de las etiquetas verdaderas. UMAP es sólido (ARI 0.081, NMI 0.179), pero t-SNE es el más débil (ARI 0.029, NMI 0.045), posiblemente por su enfoque en la estructura local.</li>
+<li><b>Compromisos:</b> <ul><li>Si tu prioridad es la clasificación downstream, elige t-SNE por su superior precisión, aunque su ARI/NMI sea bajo.</li>
+<li>Para concordancia con verdad terreno o análisis supervisado, PCA o LDA son ideales por sus métricas externas altas y consistencia.</li>
+<li>UMAP ofrece un equilibrio excelente: buena precisión, la mejor silueta y métricas externas decentes, ideal para visualización y agrupamiento no lineal.</li>
+            </ul></li>
+
+            
+Estos resultados dependen del conjunto de datos específico (por ejemplo, características de alta dimensionalidad). Recomiendo validar con más experimentos, como ajuste de hiperparámetros o validación cruzada.
+""", unsafe_allow_html=True)

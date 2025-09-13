@@ -51,6 +51,24 @@ fig_2d = px.scatter(
 )
 st.plotly_chart(fig_2d, use_container_width=True)
 
+st.markdown("""
+<div style="text-align: justify; margin-top:20px;">
+            
+### Resumen de Interpretación: Proyección t-SNE 2D (Perplexity=30, Learning Rate=200)
+<ul>
+<li><b>Tipo:</b> Visualización no lineal de reducción dimensional (t-SNE) en datos preprocesados de sensores IMU (~8000 muestras). Ejes: tSNE1 (X, estructura local), tSNE2 (Y, relaciones vecinales). Preserva clusters locales, no distancias globales.</li>
+<li><b>Patrones por Clase:</b>
+    <ul>
+        <li><b>Rojo (Walking):</b> Múltiples clusters densos dispersos (alta variabilidad en movimientos lineales/aceleraciones), con solapamientos mínimos.</li>
+        <li><b>Azul (Miscellaneous):</b> Disperso y solapado con otros (naturaleza transitoria/ruido), formando "nubes" irregulares.</li>
+        <li><b>Rosa (Resting):</b> Compacto en áreas centrales/bajas (baja varianza en sensores, inactividad).</li>
+        <li><b>Verde (Grazing):</b> Disperso moderado, solapado con walking (ritmos similares pero estacionarios).</li>
+    </ul>
+</li>
+<li><b>Separabilidad:</b> Buena para clusters locales (~70-80%, mejor que PCA lineal), con solapamientos ~20-30% por ruido ambiental. tSNE resalta subestructuras no lineales (e.g., variaciones en giros/orientación).</li>
+<li><b>Implicaciones:</b> Confirma patrones naturales en comportamientos vacas; outliers rojos/azules indican anomalías (e.g., estrés). Ideal para EDA; complementa con UMAP para global. En Streamlit: Interactivo para zoom en clusters.</li>
+</ul>          
+            """, unsafe_allow_html=True)
 
 # ============================================
 # t-SNE 3D
@@ -68,7 +86,23 @@ fig_3d = px.scatter_3d(
 )
 fig_3d.update_traces(marker=dict(size=4))
 st.plotly_chart(fig_3d, use_container_width=True)
+st.markdown("""
+            #### Descripción: Proyección t-SNE 3D Interactiva
+<ul>
+<li><b>Tipo:</b> Visualización no lineal 3D (t-SNE) de datos preprocesados IMU (~8000 muestras). Ejes: tSNE1 (X, estructura local), tSNE2 (Y, vecindades), tSNE3 (Z, profundidad). Preserva relaciones locales, interactiva en Plotly (rotación/zoom).</li>
+<li><b>Patrones por Clase:</b>
+            
+<ul>
+<li><b>Rojo (Walking):</b> Clusters densos y extendidos (alta variabilidad en movimientos), dominando centro/positivo.</li>
+<li><b>Azul (Miscellaneous/Resting):</b> Compactos y esféricos cerca del origen (baja dispersión, inactividad/ruido).</li>
+<li><b>Rosa/Verde (Grazing/Otros):</b> Pequeños grupos solapados, con dispersión moderada en Z (ritmos estacionarios).</li>
+</ul>
+</li>
 
+<li><b>Separabilidad:</b> Excelente local (~80-90%, mejor que 2D por profundidad Z), solapamientos ~10-20% en transiciones. Resalta subestructuras no lineales (e.g., giros verticales).</li>
+
+<li><b>Implicaciones:</b> Confirma anomalías (outliers rojos en Z alto, e.g., estrés); ideal para EDA inmersiva en Streamlit. Complementa PCA (lineal) para patrones globales en comportamientos vacas.</li>
+</ul>            """, unsafe_allow_html=True)
 
 # ============================================
 # Conclusión

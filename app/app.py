@@ -79,9 +79,11 @@ st.markdown("""
 📊 1. Introducción
 </div>
 """, unsafe_allow_html=True)
-
+st.write(""
+         ""
+         "")
 st.markdown("""
-<div style="text-align: justify;">
+<div style="text-align: justify;">  
 
 Para esta ocasión, como equipo hemos decidido orientar nuestro examen hacia nuestro objetivo final del Magíster, que es desarrollar una metodología robusta de procesamiento y análisis de datos de comportamiento animal.  
 
