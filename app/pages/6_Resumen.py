@@ -1,4 +1,8 @@
+<<<<<<< HEAD
+import app import st
+=======
 from app import *
+>>>>>>> origin/main
 
 
 st.write("""# Resumen del Examen Final
@@ -8,6 +12,8 @@ se presenta un resumen de cada una de estas técnicas y sus aplicaciones.
 """)
 st.set_page_config(page_title="Resumen",
                    page_icon=":bar_chart:", layout="wide")
+<<<<<<< HEAD
+=======
 st.html("""
 <!DOCTYPE html>
 <html lang="es">
@@ -149,3 +155,4 @@ st.html(
 </body>
 </html>
 """)
+>>>>>>> origin/main

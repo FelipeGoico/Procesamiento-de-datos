@@ -1,28 +1,39 @@
+import base64
 import streamlit as st
 from pathlib import Path
+import pandas as pd
+from data_loader import df, get_graph
 
 # ===========================
 # Configuración página
 # ===========================
 st.set_page_config(
-    page_title="Presentación del Proyecto de investigación", 
-    page_icon=":bar_chart:", 
+    page_title="Presentación del Proyecto de investigación",
+    page_icon=":bar_chart:",
     layout="wide"
 )
+
+# Cargar dataset
+if "df" not in st.session_state:
+    st.session_state.df = pd.read_csv("../data_processed.csv")
+
+# Pre-cargar gráficos apenas se inicia la app
+if "graphs" not in st.session_state:
+    st.session_state.graphs = get_graph(st.session_state.df)
+fig, col_numericas = st.session_state.graphs
+
 
 # ===========================
 # Carpeta base y ruta de la imagen
 # ===========================
-BASE_DIR = Path(__file__).resolve().parent.parent  # sube desde pages -> app -> Procesamiento-de-datos
+# sube desde pages -> app -> Procesamiento-de-datos
+BASE_DIR = Path(__file__).resolve().parent.parent
 IMG_DIR = BASE_DIR / "img"
 IMAGE_PATH_02 = IMG_DIR / "fvets-12-1630083-g002.jpg"
 IMAGE_PATH_03 = IMG_DIR / "fvets-12-1630083-g003.jpg"
 IMAGE_PATH_04 = IMG_DIR / "fvets-12-1630083-g004.jpg"
 IMAGE_PATH_05 = IMG_DIR / "fvets-12-1630083-g005.jpg"
 
-import streamlit as st
-from pathlib import Path
-import base64
 
 # ===========================
 # Rutas de imágenes
@@ -34,10 +45,13 @@ IMAGE_PATH_05 = IMG_DIR / "fvets-12-1630083-g005.jpg"
 # ===========================
 # Convertir imagen a base64
 # ===========================
+
+
 def img_to_base64(img_path):
     with open(str(img_path), "rb") as f:  # <-- Convertimos Path a string
         data = f.read()
     return base64.b64encode(data).decode()
+
 
 img_base64 = img_to_base64(IMAGE_PATH_05)
 
@@ -86,6 +100,7 @@ st.markdown("""
 
 st.markdown("""
 <div style="text-align: justify;">
+
 Para esta ocasión, como equipo hemos decidido orientar nuestro examen hacia nuestro objetivo final del Magíster, que es desarrollar una metodología robusta de procesamiento y análisis de datos de comportamiento animal.  
 
 El enfoque de este proyecto no se limita únicamente al análisis exploratorio de un dataset público, sino que busca sentar las bases conceptuales y prácticas para nuestra tesis, permitiéndonos integrar técnicas de preprocesamiento, generación de variables derivadas y visualización avanzada en un flujo coherente y reproducible.
@@ -114,7 +129,8 @@ st.markdown("""
 La recolección de datos se llevó a cabo en vacas lecheras de pastoreo utilizando collares IoT equipados con sensores IMU (Unidad de Medición Inercial). Estos collares fueron colocados alrededor del cuello de 10 vacas lecheras.
 </div>
 """, unsafe_allow_html=True)
-st.image(str(IMAGE_PATH_03), caption="Vacas lecheras de pastoreo con collares IoT", use_container_width=True)
+st.image(str(IMAGE_PATH_03),
+         caption="Vacas lecheras de pastoreo con collares IoT", use_container_width=True)
 st.markdown("""
 <div style="text-align: justify;">
 <ul>
@@ -130,7 +146,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.image(str(IMAGE_PATH_02), caption="Localización de la Granja Experimental Maquehue, Temuco, Chile")
+st.image(str(IMAGE_PATH_02),
+         caption="Localización de la Granja Experimental Maquehue, Temuco, Chile")
 
 # 2.2 Objetivo del proyecto
 st.markdown("### 2.2 Objetivo del proyecto original")
@@ -153,7 +170,8 @@ Para lograr esto, se utilizaron dos sensores complementarios:
 </div>
 """, unsafe_allow_html=True)
 
-st.image(str(IMAGE_PATH_04), caption="Diagrama de la metodología propuesta: proyecto original", use_container_width=True)
+st.image(str(IMAGE_PATH_04),
+         caption="Diagrama de la metodología propuesta: proyecto original", use_container_width=True)
 
 # 2.3 Variables originales y procesamiento
 st.markdown("### 2.3 Variables originales y procesamiento")

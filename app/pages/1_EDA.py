@@ -1,4 +1,4 @@
-from app import st, df
+import streamlit as st
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -7,7 +7,10 @@ from pathlib import Path
 import networkx as nx
 import plotly.graph_objects as go
 import plotly.express as px
+from sklearn.decomposition import PCA
 
+
+df = st.session_state.df
 
 
 # ===========================
@@ -42,12 +45,10 @@ tr:nth-child(even) td {
 """, unsafe_allow_html=True)
 
 
-
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent  # sube desde pages -> app -> Procesamiento-de-datos
+# sube desde pages -> app -> Procesamiento-de-datos
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 IMG_DIR = BASE_DIR / "img"
 IMAGE_PATH_00 = IMG_DIR / "fvets-12-1630083-g000.jpg"
-
 
 
 # ===========================
@@ -86,9 +87,9 @@ La incorporación de estas nuevas variables derivadas no solo enriquecerá el da
 """, unsafe_allow_html=True)
 
 
-# ===========================
-# Sección: Tratamiento de la Data
-# ===========================
+# ==========================================================
+# ==================== Preparación de Datos ================
+# ==========================================================
 st.markdown("""
 ## ⚙️ Tratamiento y Preparación de los Datos
 
@@ -160,7 +161,8 @@ df['actividad_extrema'] = (
     """, language="python")
 
 
-st.image(str(IMAGE_PATH_00), caption="Estructura de carpetas y archivos del dataset original", use_container_width=True)
+st.image(str(IMAGE_PATH_00),
+         caption="Estructura de carpetas y archivos del dataset original", use_container_width=True)
 
 # ===========================
 # Dataset y variables
@@ -180,6 +182,7 @@ Esta sección presenta una descripción detallada de las variables contenidas en
 **db-cow-walking-IoT**, clasificadas según su origen y naturaleza.
 Se busca mantener una presentación clara, concisa y profesional para apoyar la investigación.
 """)
+
 
 # ===========================
 # Variables de Tiempo
@@ -263,50 +266,47 @@ with st.expander("🏷️ Variables de Etiqueta"):
 | **actividad_extrema** | Indicador binario de actividad extrema. | Categórica | 0 / 1 |
 """)
 
-
-
 # ===========================
-# Estadísticas y collage de histogramas
+# Validación de NA / Null
 # ===========================
-col_numericas = df.select_dtypes(include=[np.number]).columns.drop('label', errors='ignore')
+st.markdown("## ⚠️ Validación de valores faltantes (NA / Null)")
 
-st.markdown("### 📈 Estadísticas Descriptivas de Variables Numéricas")
+# Cantidad de NA por columna
+na_count = df.isna().sum()
+# Porcentaje de NA por columna
+na_percent = (na_count / len(df)) * 100
 
-# Tabla transpuesta limpia
-desc_df = df[col_numericas].describe().T
-desc_df = desc_df[['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']]
-desc_df = desc_df.round(2)
-st.dataframe(desc_df, use_container_width=True)
+na_df = pd.DataFrame({
+    "Columna": df.columns,
+    "NA_count": na_count,
+    "NA_percent": na_percent.round(2)
+}).sort_values(by="NA_percent", ascending=False)
 
+st.dataframe(na_df, use_container_width=True)
 
-# ===========================
-# Collage de histogramas
-# ===========================
-st.markdown("### 📊 Distribución de Variables Numéricas por columna")
+# Mensaje de alerta si hay NA
+threshold = 5  # porcentaje considerado crítico
+if any(na_percent > threshold):
+    st.warning(f"Hay columnas con más del {threshold}% de valores faltantes. Considera imputar o limpiar antes del análisis.")
+else:
+    st.success("No se detectan valores faltantes relevantes.")
 
-# Configurar grid de subplots
-n_cols = 3  # columnas en el collage
-n_rows = int(np.ceil(len(col_numericas)/n_cols))
-fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*4, n_rows*3))
-axes = axes.flatten()
+ 
+st.markdown("""
+### 📊 Distribución de Variables Numéricas
 
-for i, col in enumerate(col_numericas):
-    sns.histplot(df[col], bins=30, kde=True, color='#1f4e79', ax=axes[i])
-    axes[i].set_title(col)
-    axes[i].set_xlabel('')
-    axes[i].set_ylabel('')
+Antes de explorar las relaciones entre variables, es importante conocer la distribución individual de cada columna numérica. 
+Esto permite detectar sesgos, valores atípicos o rangos inesperados, y sirve como base para análisis posteriores como correlaciones o grafo de variables.
+""")
 
-# Quitar ejes vacíos si los hay
-for j in range(i+1, len(axes)):
-    fig.delaxes(axes[j])
-
-plt.tight_layout()
+fig, col_numericas = st.session_state.graphs
 st.pyplot(fig)
 
 st.markdown("### 📊 Mapa de Correlación de Variables Numéricas por columna")
 
 # Seleccionar variables numéricas
-col_numericas = df.select_dtypes(include=[np.number]).columns.drop('label', errors='ignore')
+col_numericas = df.select_dtypes(
+    include=[np.number]).columns.drop('label', errors='ignore')
 
 # Calcular matriz de correlación
 corr_matrix = df[col_numericas].corr()
@@ -325,7 +325,8 @@ fig = px.imshow(
 )
 
 # Reducir tamaño de texto dentro de los cuadros
-fig.update_traces(textfont_size=10)  # ajusta según convenga, 10 es ~40% más pequeño que el default
+# ajusta según convenga, 10 es ~40% más pequeño que el default
+fig.update_traces(textfont_size=10)
 
 # Mejorar layout
 fig.update_layout(
@@ -340,36 +341,34 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 
-# ==========================================================
-# Gráfico de Correlación de Red (Alternativa profesional)
-# ==========================================================
 
-
+# ==========================================================
+# Título y descripción
+# ==========================================================
 st.markdown("### 🕸️ Grafo de Correlación de Variables")
-
 st.markdown("""
 <div style="text-align: justify; margin-top: 10px;">
 Esta visualización presenta las correlaciones más fuertes como una red, donde cada nodo es una variable. 
 Una línea (arista) entre dos nodos indica una correlación significativa (positiva o negativa). Esto reduce la 
 saturación visual y ayuda a identificar rápidamente las relaciones clave.
-<br><br>
-<b><span style="color:#FF0000;">Rojo:</span></b> Correlación positiva fuerte | <b><span style="color:#0000FF;">Azul:</span></b> Correlación negativa fuerte
 </div>
 """, unsafe_allow_html=True)
 
+# Leyenda clara separada
+st.markdown("""
+**Leyenda:**  
+<b style="color:red;">Rojo:</b> Correlación positiva fuerte  
+<b style="color:blue;">Azul:</b> Correlación negativa fuerte  
+Solo se muestran correlaciones > 0.7 o < -0.7
+""", unsafe_allow_html=True)
 
-# Seleccionar variables numéricas
-# Tu código ya tiene esta línea
+# ==========================================================
+# Preparar matriz de correlación y edges
+# ==========================================================
 col_numericas = df.select_dtypes(include=[np.number]).columns.drop('label', errors='ignore')
-
-# Calcular matriz de correlación
 corr_matrix = df[col_numericas].corr()
 
-# --- Configuración del umbral para el grafo ---
-# AJUSTA ESTE VALOR: Define la fuerza mínima de una correlación para que sea mostrada.
-threshold = 0.6  # Un valor más alto reduce la cantidad de líneas
-
-# --- Preparar los datos para el grafo ---
+threshold = 0.7
 edges = []
 for i in range(len(corr_matrix.columns)):
     for j in range(i + 1, len(corr_matrix.columns)):
@@ -379,14 +378,18 @@ for i in range(len(corr_matrix.columns)):
         if abs(corr_value) > threshold:
             edges.append((var1, var2, {'correlation': corr_value}))
 
-# --- Crear el grafo con NetworkX ---
+# ==========================================================
+# Crear grafo y posiciones
+# ==========================================================
 G = nx.Graph()
 G.add_nodes_from(corr_matrix.columns)
 G.add_edges_from(edges)
-pos = nx.spring_layout(G, k=0.5, iterations=50)
 
-# --- Crear la visualización con Plotly ---
-# Trazos para las aristas (líneas)
+pos = nx.spring_layout(G, k=1.0, iterations=50, seed=42)  # mayor separación
+
+# ==========================================================
+# Preparar trazos para aristas
+# ==========================================================
 pos_edges_x, pos_edges_y, neg_edges_x, neg_edges_y = [], [], [], []
 
 for edge in G.edges():
@@ -400,42 +403,26 @@ for edge in G.edges():
         neg_edges_x.extend([x0, x1, None])
         neg_edges_y.extend([y0, y1, None])
 
-# Trazo para correlaciones positivas (rojo)
 pos_edge_trace = go.Scatter(
     x=pos_edges_x, y=pos_edges_y,
-    line=dict(width=1.5, color='rgba(255, 0, 0, 0.7)'),
+    line=dict(width=1.5, color='rgba(255,0,0,0.7)'),
     mode='lines',
     hoverinfo='none',
     name='Correlación Positiva'
 )
-
-# Trazo para correlaciones negativas (azul)
 neg_edge_trace = go.Scatter(
     x=neg_edges_x, y=neg_edges_y,
-    line=dict(width=1.5, color='rgba(0, 0, 255, 0.7)'),
+    line=dict(width=1.5, color='rgba(0,0,255,0.7)'),
     mode='lines',
     hoverinfo='none',
     name='Correlación Negativa'
 )
 
-# Trazos para los nodos (variables)
+# ==========================================================
+# Preparar nodos (texto flotante)
+# ==========================================================
 node_x = [pos[node][0] for node in G.nodes()]
 node_y = [pos[node][1] for node in G.nodes()]
-node_trace = go.Scatter(
-    x=node_x, y=node_y,
-    mode='markers+text',
-    text=[node for node in G.nodes()],
-    hoverinfo='text',
-    textposition='top center',
-    marker=dict(
-        size=15,
-        color='LightSkyBlue',
-        line=dict(color='black', width=1)
-    ),
-    name='Variables'
-)
-
-# --- Tooltips corregidos ---
 node_text = []
 for node, neighbors in G.adjacency():
     correlations = []
@@ -444,34 +431,112 @@ for node, neighbors in G.adjacency():
         correlations.append(f"{neighbor}: {corr_val:.2f}")
     hover_text = f"<b>{node}</b><br>Correlaciones fuertes:<br>" + "<br>".join(correlations)
     node_text.append(hover_text)
-node_trace.text = node_text
 
-# --- Layout corregido ---
+node_trace = go.Scatter(
+    x=node_x, y=node_y,
+    mode='markers+text',
+    text=[node for node in G.nodes()],     # solo el nombre visible sobre el nodo
+    hovertext=node_text,                   # información detallada al pasar el cursor
+    hoverinfo='text',
+    textposition='top center',
+    marker=dict(
+        size=10,
+        color='DarkBlue',
+        line=dict(color='black', width=1)
+    ),
+    textfont=dict(size=10, color='black'),
+    name='Variables'
+)
+
+# ==========================================================
+# Layout final con marco
+# ==========================================================
 fig = go.Figure(
     data=[pos_edge_trace, neg_edge_trace, node_trace],
     layout=go.Layout(
-        title=dict(
-            text='<br>Grafo de Correlación de Variables',
-            font=dict(size=16)
-        ),
+        title=dict(text='', font=dict(size=16)),
         showlegend=True,
         hovermode='closest',
         margin=dict(b=20, l=5, r=5, t=40),
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
         yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        annotations=[
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        shapes=[
             dict(
-                text=f"<b>Un nodo</b> es una variable. <b>Una línea</b> indica una correlación fuerte (> {threshold} o < -{threshold}).",
-                showarrow=False,
+                type="rect",
                 xref="paper",
                 yref="paper",
-                x=0.005,
-                y=-0.002,
-                align="left",
-                font=dict(size=12)
+                x0=0, y0=0,
+                x1=1, y1=1,
+                line=dict(color="black", width=2),
+                fillcolor="white",
+                layer="below"
             )
         ]
     )
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
+# ==========================================================
+# ==================== Preparación de Datos ====================
+# ==========================================================
+st.markdown("""
+## 🛠️ Preparación de Datos para Modelamiento
+
+Después de explorar y analizar el dataset, es necesario preparar los datos antes de aplicar modelos de machine learning.  
+Esto incluye:
+
+1. Imputación de valores faltantes.  
+2. Escalado de las variables numéricas.  
+3. Codificación de la variable target y partición Train/Test.
+""")
+
+# --------------------------
+# 4.1 Imputación (KNNImputer)
+# --------------------------
+st.markdown("### 4.1 Imputación de Valores Faltantes (KNNImputer)")
+
+# Seleccionar features numéricas (excluir Time y label si no son numéricas)
+feature_cols = [col for col in df.columns if col != 'label' and df[col].dtype in [np.float64, np.int64]]
+X = df[feature_cols]
+y = df['label']
+
+# Imputación
+from sklearn.impute import KNNImputer
+imputer = KNNImputer(n_neighbors=5)
+X_imputed = pd.DataFrame(imputer.fit_transform(X), columns=feature_cols)
+
+st.write("✅ Imputación completada. Se utilizó KNNImputer considerando correlación entre sensores.")
+st.write("% NA después de imputación:", round(X_imputed.isna().sum().sum()/X_imputed.size*100, 2), "%")
+
+# --------------------------
+# 4.2 Escalado (StandardScaler)
+# --------------------------
+st.markdown("### 4.2 Escalado de Variables Numéricas (StandardScaler)")
+
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+X_scaled = pd.DataFrame(scaler.fit_transform(X_imputed), columns=feature_cols)
+
+st.write("✅ Escalado completado. Las variables numéricas ahora tienen media=0 y desviación estándar=1.")
+
+# --------------------------
+# 4.3 Codificación y Train/Test Split
+# --------------------------
+st.markdown("### 4.3 Codificación de Etiqueta y División Train/Test")
+
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y_encoded, test_size=0.2, stratify=y_encoded, random_state=42
+)
+
+st.write(f"✅ División completada: Train={X_train.shape}, Test={X_test.shape}")
+st.write("La variable target ha sido codificada con LabelEncoder para su uso en modelos categóricos.")
+

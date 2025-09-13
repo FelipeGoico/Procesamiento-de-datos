@@ -1,7 +1,12 @@
+<<<<<<< HEAD
+data_processed.csv
+Examen_adatos_v2.ipynb
+=======
 # Archivos temporales de Python
 __pycache__/
 *.py[cod]
 *.so
+*.pyc
 
 # Archivos de Jupyter
 .ipynb_checkpoints/
@@ -25,3 +30,4 @@ ENV/
 
 # Mantén solo el CSV específico que sí quieres ignorar
 data_processed.csv
+>>>>>>> origin/main
