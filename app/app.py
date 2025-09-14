@@ -285,7 +285,7 @@ st.markdown(
 **Evaluación**
 - Supervisada: Accuracy con kNN (k=5) sobre embeddings 2D.
 - No supervisada: Silhouette score con KMeans (k=4).
-- Opcional: ARI y NMI con etiquetas verdaderas.
+- ARI y NMI con etiquetas verdaderas.
 
 **Visualización e Interactividad**
 - Scatterplots 2D de proyecciones, coloreados por comportamiento.

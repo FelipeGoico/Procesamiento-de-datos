@@ -9,6 +9,19 @@ from data_loader import (
     init_data, init_tsne, load_umap_data,
     set_global_config, get_preprocessed_data
 )
+from datetime import datetime
+from utils.report_generator import create_project_report
+
+import sys
+import os
+from pathlib import Path
+
+# Agregar el directorio padre al path de Python
+current_dir = Path(__file__).parent
+parent_dir = current_dir.parent
+sys.path.append(str(parent_dir))
+
+
 
 # ---------------------------------------------------
 # Configuración global
@@ -140,3 +153,65 @@ st.markdown("""
             
 Estos resultados dependen del conjunto de datos específico (por ejemplo, características de alta dimensionalidad). Recomiendo validar con más experimentos, como ajuste de hiperparámetros o validación cruzada.
 """, unsafe_allow_html=True)
+
+
+
+
+st.markdown("---")
+st.subheader("Generar Reporte Formal")
+
+
+# Al final del archivo, después de mostrar la tabla de resultados
+st.markdown("---")
+st.subheader("Generar Reporte Formal")
+
+try:
+    # Primero verifica si FPDF está instalado
+    import fpdf
+    st.success("✓ FPDF está correctamente instalado")
+    
+    # Ahora intenta importar la función específica
+    from utils.report_generator import create_project_report
+    st.success("✓ Función create_project_report importada correctamente")
+    
+    if st.button("📄 Generar Reporte Técnico en PDF"):
+        with st.spinner("Generando reporte formal..."):
+            pdf_bytes = create_project_report()
+            
+            st.success("Reporte generado exitosamente!")
+            
+            st.download_button(
+                label="📥 Descargar Reporte Completo",
+                data=pdf_bytes,
+                file_name=f"reporte_tecnico_proyecto_ganado_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                mime="application/pdf"
+            )
+
+except ImportError as e:
+    # Muestra el error específico
+    st.error(f"❌ Error de importación: {str(e)}")
+    
+    # Diagnóstico específico
+    if "fpdf" in str(e).lower():
+        st.warning("""
+        **Problema con FPDF:** 
+        - Ejecuta: `pip install fpdf`
+        - Reinicia Streamlit
+        """)
+    elif "utils" in str(e).lower() or "report_generator" in str(e).lower():
+        st.warning("""
+        **Problema con la estructura de carpetas:**
+        - Asegúrate de tener la carpeta `utils/` 
+        - Con el archivo `report_generator.py` dentro
+        - Estructura correcta:
+          ```
+          tu_proyecto/
+          ├── app.py
+          ├── pages/
+          │   └── 6_Resumen.py
+          └── utils/
+              └── report_generator.py
+          ```
+        """)
+    else:
+        st.warning(f"Error de importación no reconocido: {e}")
